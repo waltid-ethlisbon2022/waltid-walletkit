@@ -122,6 +122,17 @@ object WalletController {
                 }
                 path("presentation") {
                     // called by wallet UI
+                    get("create", documented(
+                        document().operation {
+                            it.summary("Create presentation requested by verifer via WalletConnect")
+                                .operationId("createPresentation")
+                                .addTagsItem("Presentation")
+                        }
+                            .queryParam<String>("type")
+                            .json<CredentialPresentationSessionInfo>("200"),
+                        WalletController::createPresentationSession
+                    ), UserRole.AUTHORIZED)
+                    // called by wallet UI
                     get("continue", documented(
                         document().operation {
                             it.summary("Continue presentation requested by verifer")
@@ -130,7 +141,7 @@ object WalletController {
                         }
                             .queryParam<String>("sessionId")
                             .queryParam<String>("did")
-                            .json<CredentialPresentationSession>("200"),
+                            .json<CredentialPresentationSessionInfo>("200"),
                         WalletController::continuePresentation
                     ), UserRole.AUTHORIZED)
                     // called by wallet UI
@@ -373,15 +384,6 @@ object WalletController {
                 )
             }
 
-            DidMethod.iota -> {
-                ctx.result(
-                    DidService.create(
-                        req.method,
-                        keyId ?: KeyService.getService().generate(KeyAlgorithm.EdDSA_Ed25519).id
-                    )
-                )
-            }
-
             else -> throw BadRequestResponse("DID method ${req.method} not yet supported")
         }
     }
@@ -398,6 +400,12 @@ object WalletController {
         val sessionId = CredentialIssuanceManager.startIssuerInitiatedIssuance(issuanceInitiationReq)
         ctx.status(HttpCode.FOUND)
             .header("Location", "${WalletConfig.config.walletUiUrl}/InitiateIssuance/?sessionId=${sessionId}")
+    }
+
+    fun createPresentationSession(ctx: Context) {
+        val type = ctx.queryParam("type") ?: throw BadRequestResponse("Missing type parameter")
+        val session = CredentialPresentationManager.createCredentialPresentationSessionFor(type)
+        ctx.json(session.sessionInfo)
     }
 
     fun continuePresentation(ctx: Context) {

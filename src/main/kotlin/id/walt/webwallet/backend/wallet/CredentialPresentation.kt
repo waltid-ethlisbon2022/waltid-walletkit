@@ -3,8 +3,11 @@ package id.walt.webwallet.backend.wallet
 import com.beust.klaxon.Json
 import com.google.common.cache.CacheBuilder
 import com.nimbusds.oauth2.sdk.AuthorizationRequest
+import com.nimbusds.openid.connect.sdk.Nonce
 import id.walt.custodian.Custodian
 import id.walt.model.dif.InputDescriptor
+import id.walt.model.dif.InputDescriptorConstraints
+import id.walt.model.dif.InputDescriptorField
 import id.walt.model.dif.PresentationDefinition
 import id.walt.model.oidc.OIDCProvider
 import id.walt.model.oidc.SIOPv2Response
@@ -14,6 +17,8 @@ import id.walt.services.oidc.OIDCUtils
 import id.walt.vclib.credentials.VerifiablePresentation
 import id.walt.vclib.model.toCredential
 import id.walt.vclib.templates.VcTemplateManager
+import id.walt.webwallet.backend.config.WalletConfig
+import java.net.URI
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.*
@@ -74,6 +79,30 @@ object CredentialPresentationManager {
         ).also {
             sessionCache.put(it.id, it)
         }
+    }
+
+    fun createCredentialPresentationSessionFor(type: String): CredentialPresentationSession {
+        return initCredentialPresentation(
+            OIDC4VPService.createOIDC4VPRequest(
+                URI(WalletConfig.config.walletApiUrl),
+                redirect_uri = URI.create("walletconnect:/"),
+                nonce = Nonce(),
+                presentation_definition = PresentationDefinition(
+                    id = "1",
+                    input_descriptors = listOf(
+                        InputDescriptor(
+                            id = "1",
+                            constraints = InputDescriptorConstraints(
+                                fields = listOf(InputDescriptorField(
+                                    path = listOf("$.type"),
+                                    filter = mapOf(
+                                        "const" to type
+                                    )
+                                ))
+                            )
+                        )
+                    )
+                )))
     }
 
     private fun getPresentableCredentials(session: CredentialPresentationSession): List<PresentableCredential> {
