@@ -87,6 +87,16 @@ object VerifierController {
                                 .result<String>("200"),
                             VerifierController::hasRecentlyVerified)
                     )
+                    post("walletconnect", documented(
+                        document().operation {
+                            it.summary("WalletConnect response verification")
+                                .addTagsItem("Verifier")
+                                .operationId("verifySIOPv2Request")
+                        }
+                            .body<String>()
+                            .result<SIOPResponseVerificationResult>("200"),
+                        VerifierController::verifyWalletConnectResponse
+                    ))
                 }
                 path("policies") {
                     before { WalletContextManager.setCurrentContext(VerifierManager.getService().verifierContext) }
@@ -231,6 +241,12 @@ object VerifierController {
             ctx.status(HttpCode.FORBIDDEN)
             return
         }
+        ctx.json(result)
+    }
+
+    fun verifyWalletConnectResponse(ctx: Context) {
+        val vp_token = ctx.body()
+        val result = VerifierManager.getService().verifyWalletConnectResponse(vp_token)
         ctx.json(result)
     }
 

@@ -19,6 +19,8 @@ import id.walt.services.hkvstore.FilesystemStoreConfig
 import id.walt.services.keystore.HKVKeyStoreService
 import id.walt.services.oidc.OIDC4VPService
 import id.walt.services.vcstore.HKVVcStoreService
+import id.walt.vclib.credentials.VerifiablePresentation
+import id.walt.vclib.model.toCredential
 import id.walt.webwallet.backend.auth.JWTService
 import id.walt.webwallet.backend.auth.UserInfo
 import id.walt.webwallet.backend.context.UserContext
@@ -151,6 +153,20 @@ abstract class VerifierManager : BaseService() {
         respCache.put(result.state, result)
 
         return result
+    }
+
+    fun verifyWalletConnectResponse(vp_token: String): SIOPResponseVerificationResult {
+        val vp = vp_token.toCredential() as VerifiablePresentation
+        return SIOPResponseVerificationResult(
+            "walletconnect",
+            subject = vp.holder,
+            listOf(VPVerificationResult(
+                vp = vp,
+                verification_result = ContextManager.runWith(verifierContext) {
+                    Auditor.getService().verify(vp, listOf(SignaturePolicy()))
+                }
+            )), null
+        )
     }
 
     open fun getVerificationRedirectionUri(
