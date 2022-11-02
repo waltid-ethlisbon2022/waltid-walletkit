@@ -42,6 +42,11 @@ data:
           "url": "https://issuer.walt-test.cloud/issuer-api/oidc",
           "description": "walt.id Issuer Portal"
         },
+        "iota-issuer.walt.id": {
+          "id": "iota-issuer.walt.id",
+          "url": "https://iota-issuer.walt.id/issuer-api/oidc",
+          "description": "walt.id IOTA Issuer Portal"
+        },
         "yes.com": {
           "id": "yes.com",
           "url": "https://demo.sandbox.yes.com/essif/issuer/c2id",
